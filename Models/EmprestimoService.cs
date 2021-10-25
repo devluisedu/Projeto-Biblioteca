@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using System.Collections;
+using System;
 
 namespace Biblioteca.Models
 {
@@ -30,11 +32,62 @@ namespace Biblioteca.Models
             }
         }
 
-        public ICollection<Emprestimo> ListarTodos(FiltrosEmprestimos filtro)
+       /* public ICollection<Emprestimo> ListarTodos(FiltrosEmprestimos filtro)
         {
             using(BibliotecaContext bc = new BibliotecaContext())
             {
                 return bc.Emprestimos.Include(e => e.Livro).ToList();
+            }
+        } */
+
+        
+         public List<Emprestimo> ListarTodos(FiltrosEmprestimos filtro = null)
+        {
+            using(BibliotecaContext bc = new BibliotecaContext())
+            {
+                IQueryable<Emprestimo> query;
+                
+                if(filtro != null)
+                {
+                    switch(filtro.TipoFiltro)
+                    {
+                        case "NomeUsuario":
+                            query = bc.Emprestimos.Where(e => e.NomeUsuario.Contains(filtro.Filtro));
+                        break;
+                        /*
+                        case "LivroId":
+                            query = bc.Emprestimos.Where(e => e.LivroId.Contains(filtro.Filtro));
+                        break;
+                        */
+                        
+                        default:
+                            query = bc.Emprestimos;
+                        break;
+                    }
+                }
+                else
+                {
+                    // caso filtro não tenha sido informado
+                    query = bc.Emprestimos;
+                }
+                
+                //ordenação padrão
+                return bc.Emprestimos.Include(e => e.Livro).ToList();
+
+                //return query.OrderBy(e => e.NomeUsuario).ToList();
+            }
+        }
+        
+        public ICollection<Emprestimo> ListarDisponiveis()
+        {
+            using(BibliotecaContext bc = new BibliotecaContext())
+            {
+                //busca os livros onde o id não está entre os ids de livro em empréstimo
+                // utiliza uma subconsulta
+                return
+                    bc.Emprestimos
+                    .Where(l =>  !(bc.Emprestimos.Where(e => e.Devolvido == false).Select(e => e.LivroId).Contains(l.Id)) )
+                    .ToList();
             }
         }
 
